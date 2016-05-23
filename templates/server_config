@@ -1,0 +1,46 @@
+#
+# {{ item.description }}
+#
+
+{% for server in item.servers %}
+server {
+
+    listen {{ server.port }};
+    listen [::]:{{ server.port }};
+    {% if server.server_name is defined %}
+    server_name {{ server.server_name }};
+    {% endif %}
+
+    error_log {{ server.log_directory | default("/var/log/nginx") }}/{{ item.name }}_error.log;
+    access_log {{ server.log_directory | default("/var/log/nginx") }}/{{ item.name }}_access.log timed_combined;
+
+    {% if server.ssl is defined %}
+    ssl on;
+    ssl_certificate {{ server.ssl.certificate }};
+    ssl_certificate_key {{ server.ssl.key }};
+    {% endif %}
+
+    {% if server.root is defined %}
+    root {{ server.root }};
+    {% endif %}
+    {% if server.index is defined %}
+    index {{ server.index }};
+    {% endif %}
+
+    {% if server.locations is defined %}
+    {% for location in server.locations %}
+    location {{ location.route }} {
+        {% if location.rules is defined %}
+        {% for rule in location.rules %}
+        {{ rule }};
+        {% endfor %}
+        {% endif %}
+    }
+    {% endfor %}
+    {% endif %}
+
+    {% if server.redirect is defined%}
+    return 301 {{ server.redirect }};
+    {% endif %}
+}
+{% endfor %}

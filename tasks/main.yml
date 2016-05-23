@@ -1,0 +1,50 @@
+---
+- name: Install nginx
+  apt: name=nginx state=latest
+  notify: Restart nginx
+
+- name: Copy default index
+  copy:
+    src: index.html
+    dest: /var/www/html/index.html
+    owner: root
+    mode: 0644
+
+- name: Install nginx config
+  template:
+    src: nginx.conf
+    dest: /etc/nginx/nginx.conf
+  notify: Reload nginx
+
+- name: Install nginx vhosts config files
+  template:
+    src: server_config
+    dest: /etc/nginx/sites-available/{{ item.name }}
+  with_items: "{{ nginx_configs }}"
+  notify: Reload nginx
+
+- name: Enable sites
+  file:
+    src: "/etc/nginx/sites-available/{{ item.name }}"
+    dest: "/etc/nginx/sites-enabled/{{ item.name }}"
+    state: link
+    force: yes
+    owner: root
+    group: root
+    mode: 0644
+  when: item.enabled is defined and item.enabled
+  with_items: "{{ nginx_configs }}"
+  notify: Reload nginx
+
+- name: Disable sites
+  file:
+    follow: no
+    src: "/etc/nginx/sites-available/{{ item.name }}"
+    dest: "/etc/nginx/sites-enabled/{{ item.name }}"
+    state: absent
+  when: item.enabled is defined and not item.enabled
+  with_items: "{{ nginx_configs }}"
+  notify: Reload nginx
+
+- name: Ensure nginx is started and enabled
+  service: name=nginx state=started enabled=yes
