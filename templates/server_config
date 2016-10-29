@@ -32,7 +32,7 @@ server {
     location {{ location.route }} {
         {% if location.rules is defined %}
         {% for rule in location.rules %}
-        {{ rule }};
+        {{ rule }}
         {% endfor %}
         {% endif %}
     }
